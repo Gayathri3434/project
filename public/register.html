@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Attendance Management System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-image"></div>
+  <div class="overlay"></div>
+  
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>🎓</h1>
+        <h2>Create Account</h2>
+        <p>Register as Student or Teacher</p>
+      </div>
+      
+      <form id="registerForm" class="auth-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Choose a username" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="Enter your email" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Create a password" required minlength="6">
+        </div>
+        
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="role">Register as</label>
+          <select id="role" required>
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+          </select>
+        </div>
+        
+        <button type="submit" class="auth-btn">
+          <span>📝</span> Register
+        </button>
+      </form>
+      
+      <div class="auth-footer">
+        <p>Already have an account? <a href="login.html">Login here</a></p>
+        <a href="index.html" class="back-link">← Back to Home</a>
+      </div>
+    </div>
+  </div>
+  
+  <div id="toast" class="toast"></div>
+  
+  <script>
+    // Check if already logged in
+    const token = sessionStorage.getItem('token');
+    const savedUser = sessionStorage.getItem('user');
+    if (token && savedUser) {
+      const currentUser = JSON.parse(savedUser);
+      if (currentUser.role === 'admin') {
+        window.location.href = 'admin-dashboard.html';
+      } else if (currentUser.role === 'teacher') {
+        window.location.href = 'teacher-dashboard.html';
+      } else {
+        window.location.href = 'student-dashboard.html';
+      }
+    }
+    
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const role = document.getElementById('role').value;
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      
+      if (password !== confirmPassword) {
+        showToast('Passwords do not match!', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showToast('Password must be at least 6 characters!', 'error');
+        return;
+      }
+      
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Registering...';
+        const apiUrl = window.location.protocol + '//' + window.location.hostname + ':5000/api/auth/register';
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password, role })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showToast(data.message, 'success');
+          setTimeout(() => {
+            window.location.href = data.redirect;
+          }, 1500);
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch (err) {
+        showToast('Registration failed. Please try again.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>📝</span> Register';
+      }
+    });
+    
+    function showToast(message, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast ' + type + ' show';
+      setTimeout(() => {
+        toast.className = 'toast';
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
